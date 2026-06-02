@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zona de Ventas 4Life</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="contenedor">
+        <h1>Zona de Ventas - 4Life Proyecto</h1>
+
+        <div class="tarjeta">
+            <h2>Agregar Nuevo Producto</h2>
+            <form id="formulario-producto" class="formulario-grid">
+                <input type="text" id="nombre" placeholder="Nombre del producto" class="input-control" required>
+                <input type="number" step="0.01" id="precio" placeholder="Precio ($)" class="input-control" required>
+                <input type="number" id="puntos" placeholder="Puntos LP" class="input-control" required>
+                <input type="number" id="stock" placeholder="Stock" class="input-control" required>
+                
+                <button type="submit" class="btn-guardar" style="grid-column: 1 / -1;">
+                    Guardar Producto
+                </button>
+            </form>
+        </div>
+
+        <div class="tarjeta">
+            <h2>Inventario Actual</h2>
+            <div class="contenedor-tabla">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Precio</th>
+                            <th>Puntos LP</th>
+                            <th>Stock</th>
+                            <th class="texto-centrado">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-productos">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Función para cargar y mostrar los productos en la tabla (READ)
+        function cargarProductos() {
+            fetch('/productos')
+                .then(res => res.json())
+                .then(productos => {
+                    const tabla = document.getElementById('tabla-productos');
+                    tabla.innerHTML = ''; // Limpiamos la tabla
+                    
+                    productos.forEach(prod => {
+                        tabla.innerHTML += `
+                            <tr>
+                                <td>${prod.id_producto}</td>
+                                <td><strong>${prod.nombre}</strong></td>
+                                <td>$${parseFloat(prod.precio).toLocaleString()}</td>
+                                <td>${prod.puntos}</td>
+                                <td>${prod.stock}</td>
+                                <td class="texto-centrado">
+                                    <button onclick="eliminarProducto(${prod.id_producto})" class="btn-eliminar">
+                                        Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        // 2. Función para mandar un nuevo producto a la base de datos (CREATE)
+        document.getElementById('formulario-producto').addEventListener('submit', function(e) {
+            e.preventDefault(); 
+
+            const nuevoProd = {
+                nombre: document.getElementById('nombre').value,
+                precio: document.getElementById('precio').value,
+                puntos: document.getElementById('puntos').value,
+                stock: document.getElementById('stock').value
+            };
+
+            fetch('/productos/crear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nuevoProd)
+            })
+            .then(res => res.text())
+            .then(mensaje => {
+                alert(mensaje);
+                document.getElementById('formulario-producto').reset(); 
+                cargarProductos(); 
+            });
+        });
+
+        // 3. Función para borrar un producto de la base de datos (DELETE)
+        function eliminarProducto(id) {
+            if (confirm('¿Seguro que quieres eliminar este producto?')) {
+                fetch(`/productos/borrar/${id}`, { method: 'DELETE' })
+                    .then(res => res.text())
+                    .then(mensaje => {
+                        alert(mensaje);
+                        cargarProductos(); 
+                    });
+            }
+        }
+
+        // Ejecutar al abrir
+        cargarProductos();
+    </script>
+</body>
+</html>
