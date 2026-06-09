@@ -44,9 +44,40 @@
                 </table>
             </div>
         </div>
+
     </div>
 
     <script>
+
+    // 4. Función para editar un producto existente en la base de datos (UPDATE)
+        function editarProducto(id, nombre, precio, puntos, stock) {
+            // Pedimos los nuevos datos al usuario con los valores actuales como referencia
+            const nuevoNombre = prompt('Nombre del producto:', nombre);
+            const nuevoPrecio = prompt('Precio:', precio);
+            const nuevosPuntos = prompt('Puntos LP:', puntos);
+            const nuevoStock = prompt('Stock:', stock);
+
+            // Si el usuario canceló, no hacemos nada
+            if (nuevoNombre === null) return;
+
+            const datosActualizados = {
+                nombre: nuevoNombre,
+                precio: nuevoPrecio,
+                puntos: nuevosPuntos,
+                stock: nuevoStock
+            };
+
+            fetch(`/productos/editar/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datosActualizados)
+            })
+            .then(res => res.text())
+            .then(mensaje => {
+                alert(mensaje);
+                cargarProductos(); // Recargamos la tabla con los datos actualizados
+            });
+        }
         // 1. Función para cargar y mostrar los productos en la tabla (READ)
         function cargarProductos() {
             fetch('/productos')
@@ -57,6 +88,7 @@
                     
                     productos.forEach(prod => {
                         tabla.innerHTML += `
+
                             <tr>
                                 <td>${prod.id_producto}</td>
                                 <td><strong>${prod.nombre}</strong></td>
@@ -64,6 +96,9 @@
                                 <td>${prod.puntos}</td>
                                 <td>${prod.stock}</td>
                                 <td class="texto-centrado">
+                                    <button onclick="editarProducto(${prod.id_producto}, '${prod.nombre}', ${prod.precio}, ${prod.puntos}, ${prod.stock})" class="btn-editar">
+                                        Editar
+                                    </button>
                                     <button onclick="eliminarProducto(${prod.id_producto})" class="btn-eliminar">
                                         Eliminar
                                     </button>
