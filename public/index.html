@@ -110,28 +110,40 @@
         }
 
         // 2. Función para mandar un nuevo producto a la base de datos (CREATE)
-        document.getElementById('formulario-producto').addEventListener('submit', function(e) {
-            e.preventDefault(); 
+    document.getElementById('formulario-producto').addEventListener('submit', function(e) {
+        e.preventDefault(); 
 
-            const nuevoProd = {
-                nombre: document.getElementById('nombre').value,
-                precio: document.getElementById('precio').value,
-                puntos: document.getElementById('puntos').value,
-                stock: document.getElementById('stock').value
-            };
+        const nombre = document.getElementById('nombre').value;
+        const precio = parseFloat(document.getElementById('precio').value);
+        const puntos = parseInt(document.getElementById('puntos').value);
+        const stock = parseInt(document.getElementById('stock').value);
 
-            fetch('/productos/crear', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(nuevoProd)
-            })
-            .then(res => res.text())
-            .then(mensaje => {
-                alert(mensaje);
-                document.getElementById('formulario-producto').reset(); 
-                cargarProductos(); 
-            });
+        // Validación: precio debe ser positivo
+        if (precio <= 0) {
+            alert('El precio debe ser un número mayor a 0');
+            return;
+        }
+
+        // Validación: stock debe ser positivo
+        if (stock <= 0) {
+            alert('El stock debe ser un número mayor a 0');
+            return;
+        }
+
+        const nuevoProd = { nombre, precio, puntos, stock };
+
+        fetch('/productos/crear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nuevoProd)
+        })
+        .then(res => res.text())
+        .then(mensaje => {
+            alert(mensaje);
+            document.getElementById('formulario-producto').reset(); 
+            cargarProductos(); 
         });
+    });
 
         // 3. Función para borrar un producto de la base de datos (DELETE)
         function eliminarProducto(id) {
