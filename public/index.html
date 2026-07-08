@@ -8,17 +8,55 @@
 </head>
 <body>
 
-    <div class="contenedor">
+    <!-- ===================== PANTALLA DE LOGIN ===================== -->
+    <div class="contenedor" id="pantalla-login">
         <h1>Zona de Ventas - 4Life Proyecto</h1>
 
-        <div class="tarjeta">
+        <div class="login-header">
+            <span class="logo-pildora">4Life</span>
+            <span class="icono-perfil">&#128100;</span>
+        </div>
+
+        <div class="tarjeta tarjeta-login">
+            <h2>Inicio de Sesión</h2>
+
+            <div class="formulario-grid">
+                <label for="login-usuario">Usuario</label>
+                <input type="text" id="login-usuario" placeholder="Usuario" class="input-control">
+
+                <label for="login-contrasena">Contraseña</label>
+                <input type="password" id="login-contrasena" placeholder="Contraseña" class="input-control">
+
+                <p id="login-error" class="mensaje-error" style="display:none;">
+                    <strong>Error</strong>
+                    Usuario o contraseña incorrectos
+                </p>
+
+                <button id="btn-ingresar" class="btn-guardar" style="grid-column: 1 / -1;">
+                    Ingresar
+                </button>
+            </div>
+
+            <div class="links-login">
+                <a href="#">Crear usuario</a>
+                <a href="#">¿Olvidaste tu contraseña?</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== PANEL DE PRODUCTOS (oculto hasta iniciar sesión) ===================== -->
+    <div class="contenedor" id="pantalla-panel" style="display:none;">
+        <h1>Zona de Ventas - 4Life Proyecto</h1>
+        <p id="bienvenida-usuario" class="bienvenida"></p>
+
+        <div class="tarjeta" id="tarjeta-formulario">
             <h2>Agregar Nuevo Producto</h2>
             <form id="formulario-producto" class="formulario-grid">
                 <input type="text" id="nombre" placeholder="Nombre del producto" class="input-control" required>
                 <input type="number" step="0.01" id="precio" placeholder="Precio ($)" class="input-control" required>
                 <input type="number" id="puntos" placeholder="Puntos LP" class="input-control" required>
                 <input type="number" id="stock" placeholder="Stock" class="input-control" required>
-                
+
                 <button type="submit" class="btn-guardar" style="grid-column: 1 / -1;">
                     Guardar Producto
                 </button>
@@ -36,129 +74,157 @@
                             <th>Precio</th>
                             <th>Puntos LP</th>
                             <th>Stock</th>
-                            <th class="texto-centrado">Acciones</th>
+                            <th class="texto-centrado" id="col-acciones">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="tabla-productos">
-                        </tbody>
+                    <tbody id="tabla-productos"></tbody>
                 </table>
             </div>
         </div>
 
+        <a href="#" id="btn-salir" class="btn-salir">Cerrar sesión</a>
     </div>
 
     <script>
+    const URL_AUTH = 'http://localhost:3001';
 
-    // 4. Función para editar un producto existente en la base de datos (UPDATE)
-        function editarProducto(id, nombre, precio, puntos, stock) {
-            // Pedimos los nuevos datos al usuario con los valores actuales como referencia
-            const nuevoNombre = prompt('Nombre del producto:', nombre);
-            const nuevoPrecio = prompt('Precio:', precio);
-            const nuevosPuntos = prompt('Puntos LP:', puntos);
-            const nuevoStock = prompt('Stock:', stock);
+    // ============ LOGIN ============
+    document.getElementById('btn-ingresar').addEventListener('click', function () {
+        const usuario = document.getElementById('login-usuario').value;
+        const contrasena = document.getElementById('login-contrasena').value;
+        const errorTxt = document.getElementById('login-error');
 
-            // Si el usuario canceló, no hacemos nada
-            if (nuevoNombre === null) return;
+        fetch(`${URL_AUTH}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario, contrasena })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('credenciales');
+            return res.json();
+        })
+        .then(datos => {
+            errorTxt.style.display = 'none';
+            sessionStorage.setItem('rol', datos.rol);
+            sessionStorage.setItem('usuario', usuario);
+            mostrarPanel();
+        })
+        .catch(() => {
+            errorTxt.style.display = 'block';
+        });
+    });
 
-            const datosActualizados = {
-                nombre: nuevoNombre,
-                precio: nuevoPrecio,
-                puntos: nuevosPuntos,
-                stock: nuevoStock
-            };
+    document.getElementById('btn-salir').addEventListener('click', function (e) {
+        e.preventDefault();
+        sessionStorage.clear();
+        document.getElementById('pantalla-panel').style.display = 'none';
+        document.getElementById('pantalla-login').style.display = 'block';
+    });
 
-            fetch(`/productos/editar/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datosActualizados)
-            })
-            .then(res => res.text())
-            .then(mensaje => {
-                alert(mensaje);
-                cargarProductos(); // Recargamos la tabla con los datos actualizados
-            });
-        }
-        // 1. Función para cargar y mostrar los productos en la tabla (READ)
-        function cargarProductos() {
-            fetch('/productos')
-                .then(res => res.json())
-                .then(productos => {
-                    const tabla = document.getElementById('tabla-productos');
-                    tabla.innerHTML = ''; // Limpiamos la tabla
-                    
-                    productos.forEach(prod => {
-                        tabla.innerHTML += `
+    function mostrarPanel() {
+        document.getElementById('pantalla-login').style.display = 'none';
+        document.getElementById('pantalla-panel').style.display = 'block';
 
-                            <tr>
-                                <td>${prod.id_producto}</td>
-                                <td><strong>${prod.nombre}</strong></td>
-                                <td>$${parseFloat(prod.precio).toLocaleString()}</td>
-                                <td>${prod.puntos}</td>
-                                <td>${prod.stock}</td>
-                                <td class="texto-centrado">
-                                    <button onclick="editarProducto(${prod.id_producto}, '${prod.nombre}', ${prod.precio}, ${prod.puntos}, ${prod.stock})" class="btn-editar">
-                                        Editar
-                                    </button>
-                                    <button onclick="eliminarProducto(${prod.id_producto})" class="btn-eliminar">
-                                        Eliminar
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                    });
+        const rol = sessionStorage.getItem('rol');
+        document.getElementById('bienvenida-usuario').textContent =
+            `Sesión iniciada como ${sessionStorage.getItem('usuario')} (${rol})`;
+
+        const esAdmin = rol === 'admin';
+        document.getElementById('tarjeta-formulario').style.display = esAdmin ? 'block' : 'none';
+        document.getElementById('col-acciones').style.display = esAdmin ? 'table-cell' : 'none';
+
+        cargarProductos();
+    }
+
+    // ===== Funciones originales del CRUD, sin cambios de fondo =====
+
+    function editarProducto(id, nombre, precio, puntos, stock) {
+        const nuevoNombre = prompt('Nombre del producto:', nombre);
+        const nuevoPrecio = prompt('Precio:', precio);
+        const nuevosPuntos = prompt('Puntos LP:', puntos);
+        const nuevoStock = prompt('Stock:', stock);
+        if (nuevoNombre === null) return;
+
+        const datosActualizados = { nombre: nuevoNombre, precio: nuevoPrecio, puntos: nuevosPuntos, stock: nuevoStock };
+
+        fetch(`/productos/editar/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosActualizados)
+        })
+        .then(res => res.text())
+        .then(mensaje => { alert(mensaje); cargarProductos(); });
+    }
+
+    function cargarProductos() {
+        const esAdmin = sessionStorage.getItem('rol') === 'admin';
+
+        fetch('/productos')
+            .then(res => res.json())
+            .then(productos => {
+                const tabla = document.getElementById('tabla-productos');
+                tabla.innerHTML = '';
+
+                productos.forEach(prod => {
+                    const acciones = esAdmin ? `
+                        <td class="texto-centrado">
+                            <button onclick="editarProducto(${prod.id_producto}, '${prod.nombre}', ${prod.precio}, ${prod.puntos}, ${prod.stock})" class="btn-editar">
+                                Editar
+                            </button>
+                            <button onclick="eliminarProducto(${prod.id_producto})" class="btn-eliminar">
+                                Eliminar
+                            </button>
+                        </td>` : '';
+
+                    tabla.innerHTML += `
+                        <tr>
+                            <td>${prod.id_producto}</td>
+                            <td><strong>${prod.nombre}</strong></td>
+                            <td>$${parseFloat(prod.precio).toLocaleString()}</td>
+                            <td>${prod.puntos}</td>
+                            <td>${prod.stock}</td>
+                            ${acciones}
+                        </tr>
+                    `;
                 });
-        }
+            });
+    }
 
-        // 2. Función para mandar un nuevo producto a la base de datos (CREATE)
     document.getElementById('formulario-producto').addEventListener('submit', function(e) {
-        e.preventDefault(); 
-
+        e.preventDefault();
         const nombre = document.getElementById('nombre').value;
         const precio = parseFloat(document.getElementById('precio').value);
         const puntos = parseInt(document.getElementById('puntos').value);
         const stock = parseInt(document.getElementById('stock').value);
 
-        // Validación: precio debe ser positivo
-        if (precio <= 0) {
-            alert('El precio debe ser un número mayor a 0');
-            return;
-        }
-
-        // Validación: stock debe ser positivo
-        if (stock <= 0) {
-            alert('El stock debe ser un número mayor a 0');
-            return;
-        }
-
-        const nuevoProd = { nombre, precio, puntos, stock };
+        if (precio <= 0) { alert('El precio debe ser un número mayor a 0'); return; }
+        if (stock <= 0) { alert('El stock debe ser un número mayor a 0'); return; }
 
         fetch('/productos/crear', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(nuevoProd)
+            body: JSON.stringify({ nombre, precio, puntos, stock })
         })
         .then(res => res.text())
         .then(mensaje => {
             alert(mensaje);
-            document.getElementById('formulario-producto').reset(); 
-            cargarProductos(); 
+            document.getElementById('formulario-producto').reset();
+            cargarProductos();
         });
     });
 
-        // 3. Función para borrar un producto de la base de datos (DELETE)
-        function eliminarProducto(id) {
-            if (confirm('¿Seguro que quieres eliminar este producto?')) {
-                fetch(`/productos/borrar/${id}`, { method: 'DELETE' })
-                    .then(res => res.text())
-                    .then(mensaje => {
-                        alert(mensaje);
-                        cargarProductos(); 
-                    });
-            }
+    function eliminarProducto(id) {
+        if (confirm('¿Seguro que quieres eliminar este producto?')) {
+            fetch(`/productos/borrar/${id}`, { method: 'DELETE' })
+                .then(res => res.text())
+                .then(mensaje => { alert(mensaje); cargarProductos(); });
         }
+    }
 
-        // Ejecutar al abrir
-        cargarProductos();
+    // Si ya había sesión activa en esta pestaña, saltamos directo al panel
+    if (sessionStorage.getItem('rol')) {
+        mostrarPanel();
+    }
     </script>
 </body>
 </html>

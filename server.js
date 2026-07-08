@@ -1,12 +1,14 @@
 const express = require('express');
 const mysql = require('mysql2');
+const cors = require('cors');
 const app = express();
+const path = require('path');
 
-app.use(express.static('public'));
-
-// Para que el servidor pueda entender los datos que le enviemos desde formularios o vistas
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 
 // Conexión a la base de datos
